@@ -36,7 +36,7 @@ The default memory resource demand for the extended queuejob controller is `2G`.
 
 To list available compute nodes on your cluster enter the following command:
 ```
-kubektl get nodes
+kubectl get nodes
 ```
 For example:
 ```
@@ -47,7 +47,7 @@ $ kubectl get nodes
 
 To find out the available resources in you cluster inspect each node from the command output above with the following command:
 ```
-kubectl describe node <node_name>
+$ kubectl describe node <node_name>
 ```
 For example:
 ```
@@ -83,22 +83,32 @@ Events:     <none>
 In the example above, there is only one node (`minikube`) in the cluster with the majority of the cluster memory used (`1,254Mi` used out of `1,936Mi` allocatable capacity) leaving less than `700Mi` available capacity for new pod deployments in the cluster.  Since the default memory demand for the Enhanced QueueuJob Controller pod is `2G` the cluster has insufficient memory to deploy the controller.  Instruction notes provided below show how to override the defaults according to the available capacity in your cluster.
 
 ### 4. Run the installation using Helm.
-Install the Extended QueueJob Controller using the command below.  If you do not have enough compute resources in your cluster you can adjust the resource request via the command line.  See an example in the `Note` below.  
+Install the Extended QueueJob Controller using the command below.  The `--wait` parameter in command below will not return until either all pods of the helm chart are running or the default timeout expires (*typically 300 seconds*).
+
+
+Before submitting the command below you should ensure you have enough resources in your cluster to deploy the helm chart (*see step #3 above*).  If you do not have enough compute resources in your cluster you can adjust the resource request via the command line.  See an example in the `Note` below.  
 ```
-helm install kube-arbitrator --namespace kube-system
+helm install kube-arbitrator --namespace kube-system --wait 
 ```
 NOTE: You can adjust the cpu and memory demands of the deployment with command line overrides.  For example:
 ```
-helm install kube-arbitrator --namespace kube-system --set resources.requests.cpu=1000m --set resources.requests.memory=1024Mi --set resources.limits.cpu=1000m --set resources.limits.memory=1024Mi
+helm install kube-arbitrator --namespace kube-system --wait --set resources.requests.cpu=1000m --set resources.requests.memory=1024Mi --set resources.limits.cpu=1000m --set resources.limits.memory=1024Mi
 ```
 
 ### 5. Verify the installation.
-List the Helm installations.
+List the Helm installation.  The `STATUS` should be `DEPLOYED`.  
+
+NOTE: The `--wait` parameter in the helm installation command from *step #4* above ensures all resources are deployed and running if the `STATUS` indicates `DEPLOYED`.  Installing the Helm Chart without the `--wait` parameter does not ensure all resources are successfully running but may still show a `Status` of `Deployed`.  
+
+The `STATUS` value of `FAILED` indicates all resources were not created and running before the timeout occurred.  Usually this indicates a pod creation failure is due to insufficient resources to create the Enhanced QueueJob Controller pod.  Example instructions on how to adjust the resources requested for the Helm chart are described in the `NOTE` comment of *step #4* above.
 ```
-helm list
+$ helm list
+NAME                	REVISION	UPDATED                 	STATUS  	CHART                	NAMESPACE  
+opinionated-antelope	1       	Mon Jan 21 00:52:39 2019	DEPLOYED	kube-arbitrator-0.1.0	kube-system
+
 ```
 
-List the Extended QueueJobs
+Ensure the new resource but listing the Extended QueueJobs.
 ```bash
 kubectl get xqueuejobs
 ```
